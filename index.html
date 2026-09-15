@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buku Kas — Pendapatan & Pengeluaran</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
@@ -40,6 +41,7 @@
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%23221A38' stroke-opacity='0.06' stroke-width='2.4'%3E%3Ccircle cx='34' cy='34' r='16'/%3E%3Cpath d='M34 27v14M29 30.5c0-2.5 2-3.8 5-3.8s5 1.3 5 3.6c0 4.6-10 3-10 7.6 0 2.3 2 3.6 5 3.6s5-1.3 5-3.8' stroke-linecap='round'/%3E%3Cpath d='M150 20h34l6 10v34h-46V26z'/%3E%3Cpath d='M158 30h18M158 38h18M158 46h10'/%3E%3Cpath d='M40 150l-10 34h58l-10-34z'/%3E%3Cpath d='M46 150v-8a8 8 0 0116 0v8'/%3E%3Ccircle cx='170' cy='160' r='15'/%3E%3Cpath d='M170 153v14M164.5 156.6c0-2.2 1.8-3.4 4.5-3.4s4.5 1.2 4.5 3.2c0 4-9 2.6-9 6.6 0 2 1.8 3.2 4.5 3.2s4.5-1.2 4.5-3.4'/%3E%3Cpath d='M210 190h20l4 6v22h-28v-22z'/%3E%3Cpath d='M215 197h10M215 203h10'/%3E%3C/g%3E%3C/svg%3E");
     background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
     background-attachment: fixed, fixed, fixed, fixed, fixed;
+    min-height:100vh;
   }
 
   .shell{
@@ -55,6 +57,7 @@
     text-align:center;
     margin-bottom:28px;
     gap:14px;
+    position:relative;
   }
   header h1{
     font-family:'Fraunces', serif;
@@ -99,6 +102,97 @@
     border-radius:999px;
     white-space:nowrap;
   }
+
+  /* User bar */
+  .user-bar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--card);
+    padding:8px 8px 8px 16px;
+    border-radius:999px;
+    box-shadow: 0 1px 0 var(--rule);
+    font-size:13px;
+  }
+  .user-bar .email{
+    color:var(--ink);
+    font-weight:600;
+    max-width:220px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .user-bar button{
+    background:var(--expense-bg);
+    color:var(--expense);
+    border:none;
+    padding:7px 14px;
+    border-radius:999px;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .user-bar button:hover{filter:brightness(0.96);}
+
+  /* Auth panel */
+  .auth-wrap{
+    max-width:400px;
+    margin:60px auto;
+  }
+  .auth-card{
+    background:var(--card);
+    border-radius:20px;
+    padding:32px;
+    box-shadow: 0 1px 0 var(--rule);
+  }
+  .auth-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:22px;
+  }
+  .auth-tabs button{
+    flex:1;
+    padding:10px 0;
+    border:2px solid var(--rule);
+    border-radius:10px;
+    background:#fff;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    color:var(--muted);
+  }
+  .auth-tabs button.active{background:var(--purple-bg); color:var(--purple); border-color:var(--purple);}
+  .auth-form{display:flex; flex-direction:column; gap:14px;}
+  .auth-form input{
+    width:100%;
+    padding:11px 13px;
+    border:2px solid var(--rule);
+    border-radius:10px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+  }
+  .auth-form input:focus{outline:none; border-color:var(--purple);}
+  .auth-submit{
+    padding:13px 0;
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    cursor:pointer;
+  }
+  .auth-submit:hover{background:#382a5c;}
+  .auth-msg{
+    font-size:13px;
+    text-align:center;
+    min-height:18px;
+  }
+  .auth-msg.error{color:var(--expense);}
+  .auth-msg.success{color:var(--income);}
 
   .layout{
     display:grid;
@@ -296,6 +390,7 @@
     margin-top:6px;
   }
   .submit-btn:hover{background:#382a5c;}
+  .submit-btn:disabled{opacity:0.6; cursor:default;}
 
   .note{
     font-size:12px;
@@ -362,6 +457,8 @@
   }
   .scanner-close:hover{background:rgba(255,255,255,0.2);}
 
+  .hidden{display:none !important;}
+
   @media (max-width: 760px){
     .layout{grid-template-columns:1fr;}
     .summary{grid-template-columns:1fr;}
@@ -377,66 +474,89 @@
       <h1>Buku Kas</h1>
       <div class="subtitle">Catatan pendapatan &amp; pengeluaran harian</div>
     </div>
+    <div id="userBar" class="user-bar hidden">
+      <span class="email" id="userEmail"></span>
+      <button id="logoutBtn" type="button">Keluar</button>
+    </div>
     <div class="today-pill" id="todayLabel"></div>
   </header>
 
-  <div class="summary">
-    <div class="stat income">
-      <div class="label">Total Pendapatan</div>
-      <div class="value" id="totalIncome">Rp 0</div>
-    </div>
-    <div class="stat expense">
-      <div class="label">Total Pengeluaran</div>
-      <div class="value" id="totalExpense">Rp 0</div>
-    </div>
-    <div class="stat balance">
-      <div class="label">Saldo Akhir</div>
-      <div class="value" id="totalBalance">Rp 0</div>
+  <!-- AUTH PANEL (shown when not logged in) -->
+  <div class="auth-wrap" id="authWrap">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button type="button" id="tabLogin" class="active">Masuk</button>
+        <button type="button" id="tabRegister">Daftar</button>
+      </div>
+      <form class="auth-form" id="authForm">
+        <input type="email" id="authEmail" placeholder="Alamat email" required>
+        <input type="password" id="authPassword" placeholder="Kata sandi (min. 6 karakter)" required minlength="6">
+        <button type="submit" class="auth-submit" id="authSubmitBtn">Masuk</button>
+        <div class="auth-msg" id="authMsg"></div>
+      </form>
     </div>
   </div>
 
-  <div class="layout">
-    <div class="ledger-panel">
-      <h2>Riwayat Transaksi</h2>
-      <div class="tx-list" id="txList">
-        <div class="empty-state">Belum ada transaksi. Tambahkan lewat form di samping, atau scan struk belanja.</div>
+  <!-- APP CONTENT (shown after login) -->
+  <div id="appContent" class="hidden">
+    <div class="summary">
+      <div class="stat income">
+        <div class="label">Total Pendapatan</div>
+        <div class="value" id="totalIncome">Rp 0</div>
+      </div>
+      <div class="stat expense">
+        <div class="label">Total Pengeluaran</div>
+        <div class="value" id="totalExpense">Rp 0</div>
+      </div>
+      <div class="stat balance">
+        <div class="label">Saldo Akhir</div>
+        <div class="value" id="totalBalance">Rp 0</div>
       </div>
     </div>
 
-    <div class="form-panel">
-      <button type="button" class="scan-btn" id="openScanBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="3" width="2" height="18"/><rect x="15" y="3" width="1.5" height="18"/><rect x="19" y="3" width="3" height="18"/></svg>
-        Scan Struk Belanja
-      </button>
+    <div class="layout">
+      <div class="ledger-panel">
+        <h2>Riwayat Transaksi</h2>
+        <div class="tx-list" id="txList">
+          <div class="empty-state">Belum ada transaksi. Tambahkan lewat form di samping, atau scan struk belanja.</div>
+        </div>
+      </div>
 
-      <h2>Tambah Transaksi</h2>
-      <form id="txForm">
-        <div class="field">
-          <label>Jenis</label>
-          <div class="type-toggle">
-            <button type="button" id="btnIncome" class="in">Pendapatan</button>
-            <button type="button" id="btnExpense" class="active out">Pengeluaran</button>
+      <div class="form-panel">
+        <button type="button" class="scan-btn" id="openScanBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="3" width="2" height="18"/><rect x="15" y="3" width="1.5" height="18"/><rect x="19" y="3" width="3" height="18"/></svg>
+          Scan Struk Belanja
+        </button>
+
+        <h2>Tambah Transaksi</h2>
+        <form id="txForm">
+          <div class="field">
+            <label>Jenis</label>
+            <div class="type-toggle">
+              <button type="button" id="btnIncome" class="in">Pendapatan</button>
+              <button type="button" id="btnExpense" class="active out">Pengeluaran</button>
+            </div>
           </div>
-        </div>
-        <div class="field">
-          <label for="txDate">Tanggal</label>
-          <input type="date" id="txDate" required>
-        </div>
-        <div class="field">
-          <label for="txDesc">Keterangan</label>
-          <input type="text" id="txDesc" placeholder="Mis. Gaji bulanan, beli bahan baku" required>
-        </div>
-        <div class="field">
-          <label for="txCat">Kategori</label>
-          <input type="text" id="txCat" placeholder="Mis. Gaji, Transport, Makan">
-        </div>
-        <div class="field">
-          <label for="txAmount">Jumlah (Rp)</label>
-          <input type="number" id="txAmount" min="0" step="1000" placeholder="0" required>
-        </div>
-        <button type="submit" class="submit-btn">Simpan Transaksi</button>
-      </form>
-      <div class="note">Data tersimpan sementara selama halaman ini dibuka. Scan barcode struk untuk mengisi keterangan otomatis, jumlahnya tetap perlu diisi manual.</div>
+          <div class="field">
+            <label for="txDate">Tanggal</label>
+            <input type="date" id="txDate" required>
+          </div>
+          <div class="field">
+            <label for="txDesc">Keterangan</label>
+            <input type="text" id="txDesc" placeholder="Mis. Gaji bulanan, beli bahan baku" required>
+          </div>
+          <div class="field">
+            <label for="txCat">Kategori</label>
+            <input type="text" id="txCat" placeholder="Mis. Gaji, Transport, Makan">
+          </div>
+          <div class="field">
+            <label for="txAmount">Jumlah (Rp)</label>
+            <input type="number" id="txAmount" min="0" step="1000" placeholder="0" required>
+          </div>
+          <button type="submit" class="submit-btn" id="txSubmitBtn">Simpan Transaksi</button>
+        </form>
+        <div class="note">Data kamu tersimpan permanen dan hanya bisa dilihat oleh akunmu sendiri. Scan barcode struk untuk mengisi keterangan otomatis, jumlahnya tetap perlu diisi manual.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -453,16 +573,150 @@
 </div>
 
 <script>
+  /* ================= Supabase setup ================= */
+  const SUPABASE_URL = 'https://lwxwkjnxdzrzywcikzqg.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_AOhM9aOFGQdrqPx9CwKLWA_IUOY6UmN';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ================= Elements ================= */
+  const authWrap = document.getElementById('authWrap');
+  const appContent = document.getElementById('appContent');
+  const userBar = document.getElementById('userBar');
+  const userEmail = document.getElementById('userEmail');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const authForm = document.getElementById('authForm');
+  const authEmail = document.getElementById('authEmail');
+  const authPassword = document.getElementById('authPassword');
+  const authSubmitBtn = document.getElementById('authSubmitBtn');
+  const authMsg = document.getElementById('authMsg');
+
+  let authMode = 'login';
   let currentType = 'expense';
   let transactions = [];
 
   const btnIncome = document.getElementById('btnIncome');
   const btnExpense = document.getElementById('btnExpense');
   const form = document.getElementById('txForm');
+  const txSubmitBtn = document.getElementById('txSubmitBtn');
   const txList = document.getElementById('txList');
   const todayLabel = document.getElementById('todayLabel');
 
   const fmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+
+  const todayISO = new Date().toISOString().split('T')[0];
+  document.getElementById('txDate').value = todayISO;
+  todayLabel.textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long' });
+
+  /* ================= Auth tabs ================= */
+  function setAuthMode(mode){
+    authMode = mode;
+    authMsg.textContent = '';
+    authMsg.className = 'auth-msg';
+    if(mode === 'login'){
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      authSubmitBtn.textContent = 'Masuk';
+    }else{
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      authSubmitBtn.textContent = 'Daftar Akun';
+    }
+  }
+  tabLogin.addEventListener('click', () => setAuthMode('login'));
+  tabRegister.addEventListener('click', () => setAuthMode('register'));
+
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    authMsg.textContent = '';
+    authMsg.className = 'auth-msg';
+    authSubmitBtn.disabled = true;
+
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+
+    try{
+      if(authMode === 'login'){
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if(error) throw error;
+      }else{
+        const { error } = await sb.auth.signUp({ email, password });
+        if(error) throw error;
+        authMsg.textContent = 'Akun dibuat! Silakan cek email untuk verifikasi jika diminta, lalu masuk.';
+        authMsg.className = 'auth-msg success';
+        setAuthMode('login');
+        authSubmitBtn.disabled = false;
+        return;
+      }
+    }catch(err){
+      authMsg.textContent = err.message || 'Terjadi kesalahan. Coba lagi.';
+      authMsg.className = 'auth-msg error';
+    }
+    authSubmitBtn.disabled = false;
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await sb.auth.signOut();
+  });
+
+  /* ================= Session handling ================= */
+  sb.auth.onAuthStateChange((event, session) => {
+    if(session){
+      showApp(session);
+    }else{
+      showAuth();
+    }
+  });
+
+  async function init(){
+    const { data } = await sb.auth.getSession();
+    if(data.session){
+      showApp(data.session);
+    }else{
+      showAuth();
+    }
+  }
+
+  function showAuth(){
+    authWrap.classList.remove('hidden');
+    appContent.classList.add('hidden');
+    userBar.classList.add('hidden');
+    transactions = [];
+  }
+
+  function showApp(session){
+    authWrap.classList.add('hidden');
+    appContent.classList.remove('hidden');
+    userBar.classList.remove('hidden');
+    userEmail.textContent = session.user.email;
+    loadTransactions();
+  }
+
+  /* ================= Transactions (Supabase) ================= */
+  async function loadTransactions(){
+    txList.innerHTML = '<div class="empty-state">Memuat data…</div>';
+    const { data, error } = await sb
+      .from('transactions')
+      .select('*')
+      .order('date', { ascending:false });
+
+    if(error){
+      txList.innerHTML = '<div class="empty-state">Gagal memuat data: ' + error.message + '</div>';
+      return;
+    }
+
+    transactions = (data || []).map(row => ({
+      id: row.id,
+      date: row.date,
+      desc: row.description,
+      cat: row.category,
+      amount: Number(row.amount),
+      type: row.type
+    }));
+    render();
+  }
 
   const palette = [
     { fg: 'var(--income)', bg: 'var(--income-bg)' },
@@ -477,10 +731,6 @@
     for(let i=0;i<key.length;i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
     return palette[hash % palette.length];
   }
-
-  const todayISO = new Date().toISOString().split('T')[0];
-  document.getElementById('txDate').value = todayISO;
-  todayLabel.textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long' });
 
   btnIncome.addEventListener('click', () => {
     currentType = 'income';
@@ -507,7 +757,7 @@
       return;
     }
 
-    const sorted = [...transactions].sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+    const sorted = [...transactions].sort((a,b) => new Date(b.date) - new Date(a.date));
     txList.innerHTML = sorted.map(t => {
       const c = colorFor(t.cat || (t.type === 'income' ? 'Pendapatan' : 'Umum'));
       const dateFmt = new Date(t.date).toLocaleDateString('id-ID', { day:'2-digit', month:'short' });
@@ -528,15 +778,19 @@
     }).join('');
 
     txList.querySelectorAll('.tx-del').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = Number(btn.dataset.id);
-        transactions = transactions.filter(t => t.id !== id);
-        render();
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        btn.disabled = true;
+        const { error } = await sb.from('transactions').delete().eq('id', id);
+        if(!error){
+          transactions = transactions.filter(t => String(t.id) !== String(id));
+          render();
+        }
       });
     });
   }
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const date = document.getElementById('txDate').value;
     const desc = document.getElementById('txDesc').value.trim();
@@ -545,13 +799,29 @@
 
     if(!date || !desc || isNaN(amount) || amount <= 0) return;
 
-    transactions.push({ id: Date.now(), date, desc, cat, amount, type: currentType });
-    render();
+    txSubmitBtn.disabled = true;
+    txSubmitBtn.textContent = 'Menyimpan…';
+
+    const { data: userData } = await sb.auth.getUser();
+    const { error } = await sb.from('transactions').insert({
+      user_id: userData.user.id,
+      date, description: desc, category: cat || null, amount, type: currentType
+    });
+
+    txSubmitBtn.disabled = false;
+    txSubmitBtn.textContent = 'Simpan Transaksi';
+
+    if(error){
+      alert('Gagal menyimpan: ' + error.message);
+      return;
+    }
+
     form.reset();
     document.getElementById('txDate').value = date;
+    loadTransactions();
   });
 
-  render();
+  init();
 
   /* ---------- Barcode scanner ---------- */
   const overlay = document.getElementById('scannerOverlay');
