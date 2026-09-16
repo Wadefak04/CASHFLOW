@@ -484,6 +484,56 @@
         </div>
       </div>
 
+      <div class="card form-panel">
+        <button type="button" class="scan-btn" id="openScanBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="3" width="2" height="18"/><rect x="15" y="3" width="1.5" height="18"/><rect x="19" y="3" width="3" height="18"/></svg>
+          Scan Struk Belanja
+        </button>
+
+        <h2>Tambah Transaksi</h2>
+        <form id="txForm">
+          <div class="field">
+            <label>Jenis</label>
+            <div class="type-toggle">
+              <button type="button" id="btnIncome" class="in">Pendapatan</button>
+              <button type="button" id="btnExpense" class="active out">Pengeluaran</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="txDate">Tanggal</label>
+            <input type="date" id="txDate" required>
+          </div>
+          <div class="field">
+            <label>Keterangan</label>
+            <div class="dropdown-select" id="descDropdown">
+              <button type="button" class="dropdown-toggle" id="descToggle">
+                <span id="descToggleLabel">Pilih keterangan</span><span class="arrow">▾</span>
+              </button>
+              <div class="dropdown-menu hidden" id="descMenu"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Kategori</label>
+            <div class="dropdown-select" id="catDropdown">
+              <button type="button" class="dropdown-toggle" id="catToggle">
+                <span id="catToggleLabel">Pilih kategori</span><span class="arrow">▾</span>
+              </button>
+              <div class="dropdown-menu hidden" id="catMenu"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Keterangan Lengkap <span class="optional-tag">(opsional, boleh dikosongkan)</span></label>
+            <textarea id="txNotes" placeholder="Tulis detail tambahan kalau perlu, mis. nama toko, alasan pengeluaran, dll."></textarea>
+          </div>
+          <div class="field">
+            <label for="txAmount">Jumlah (Rp)</label>
+            <input type="number" id="txAmount" min="0" step="1" placeholder="0" required>
+          </div>
+          <button type="submit" class="submit-btn" id="txSubmitBtn">Simpan Transaksi</button>
+        </form>
+        <div class="note">Data kamu tersimpan permanen dan hanya bisa dilihat oleh akunmu sendiri.</div>
+      </div>
+
       <div class="card">
         <h2>Bagan Pemasukan vs Pengeluaran</h2>
         <div class="donut-wrap">
@@ -540,56 +590,6 @@
         </div>
         <button type="button" class="submit-btn" id="recapDownloadBtn">Unduh Rekap (CSV)</button>
         <div class="note" id="recapMsg"></div>
-      </div>
-
-      <div class="card form-panel">
-        <button type="button" class="scan-btn" id="openScanBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="3" width="2" height="18"/><rect x="15" y="3" width="1.5" height="18"/><rect x="19" y="3" width="3" height="18"/></svg>
-          Scan Struk Belanja
-        </button>
-
-        <h2>Tambah Transaksi</h2>
-        <form id="txForm">
-          <div class="field">
-            <label>Jenis</label>
-            <div class="type-toggle">
-              <button type="button" id="btnIncome" class="in">Pendapatan</button>
-              <button type="button" id="btnExpense" class="active out">Pengeluaran</button>
-            </div>
-          </div>
-          <div class="field">
-            <label for="txDate">Tanggal</label>
-            <input type="date" id="txDate" required>
-          </div>
-          <div class="field">
-            <label>Keterangan</label>
-            <div class="dropdown-select" id="descDropdown">
-              <button type="button" class="dropdown-toggle" id="descToggle">
-                <span id="descToggleLabel">Pilih keterangan</span><span class="arrow">▾</span>
-              </button>
-              <div class="dropdown-menu hidden" id="descMenu"></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Kategori</label>
-            <div class="dropdown-select" id="catDropdown">
-              <button type="button" class="dropdown-toggle" id="catToggle">
-                <span id="catToggleLabel">Pilih kategori</span><span class="arrow">▾</span>
-              </button>
-              <div class="dropdown-menu hidden" id="catMenu"></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Keterangan Lengkap <span class="optional-tag">(opsional, boleh dikosongkan)</span></label>
-            <textarea id="txNotes" placeholder="Tulis detail tambahan kalau perlu, mis. nama toko, alasan pengeluaran, dll."></textarea>
-          </div>
-          <div class="field">
-            <label for="txAmount">Jumlah (Rp)</label>
-            <input type="number" id="txAmount" min="0" step="1" placeholder="0" required>
-          </div>
-          <button type="submit" class="submit-btn" id="txSubmitBtn">Simpan Transaksi</button>
-        </form>
-        <div class="note">Data kamu tersimpan permanen dan hanya bisa dilihat oleh akunmu sendiri.</div>
       </div>
 
     </div>
