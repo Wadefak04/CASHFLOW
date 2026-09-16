@@ -301,6 +301,7 @@
     display:flex; gap:8px; align-items:center;
   }
   .cat-chip{display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:900;}
+  .tx-notes{font-size:12px; color:var(--muted); margin-top:5px; font-weight:600; line-height:1.4;}
   .tx-amount{
     font-family:'IBM Plex Mono', monospace; font-weight:900; font-size:15px;
     white-space:nowrap; text-align:right;
@@ -328,19 +329,63 @@
 
   .field{margin-bottom:15px;}
   .field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:900;}
-  .option-chips{display:flex; flex-wrap:wrap; gap:8px;}
-  .chip{
-    padding:9px 15px;
+
+  .dropdown-select{position:relative;}
+  .dropdown-toggle{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 13px;
     border:2px solid var(--rule);
-    border-radius:999px;
+    border-radius:10px;
     background:#fff;
     font-family:'Inter', sans-serif;
-    font-size:13px;
+    font-size:14px;
     font-weight:900;
-    cursor:pointer;
     color:var(--muted);
+    cursor:pointer;
+    text-align:left;
   }
-  .chip.active{background:var(--purple-bg); color:var(--purple); border-color:var(--purple);}
+  .dropdown-toggle.filled{color:var(--ink); border-color:var(--purple);}
+  .dropdown-toggle .arrow{font-size:11px; color:var(--muted); margin-left:8px;}
+  .dropdown-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0; right:0;
+    background:#fff;
+    border:2px solid var(--rule);
+    border-radius:12px;
+    box-shadow:0 10px 24px rgba(34,26,56,0.14);
+    z-index:30;
+    overflow:hidden;
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .dropdown-menu button{
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:10px 14px;
+    border:none;
+    background:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:800;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .dropdown-menu button:hover{background:var(--purple-bg); color:var(--purple);}
+  .dropdown-menu button.active{background:var(--purple-bg); color:var(--purple);}
+
+  .field textarea{
+    width:100%; padding:10px 12px; border:2px solid var(--rule); border-radius:10px;
+    background:#fff; font-family:'Inter', sans-serif; font-size:14px; color:var(--ink);
+    resize:vertical; min-height:70px;
+  }
+  .field textarea:focus{outline:none; border-color:var(--purple);}
+  .field .optional-tag{color:var(--muted); font-weight:700; text-transform:none; letter-spacing:0;}
+
   .field input{
     width:100%; padding:10px 12px; border:2px solid var(--rule); border-radius:10px;
     background:#fff; font-family:'Inter', sans-serif; font-size:14px; color:var(--ink);
@@ -493,11 +538,25 @@
           </div>
           <div class="field">
             <label>Keterangan</label>
-            <div class="option-chips" id="descOptions"></div>
+            <div class="dropdown-select" id="descDropdown">
+              <button type="button" class="dropdown-toggle" id="descToggle">
+                <span id="descToggleLabel">Pilih keterangan</span><span class="arrow">▾</span>
+              </button>
+              <div class="dropdown-menu hidden" id="descMenu"></div>
+            </div>
           </div>
           <div class="field">
             <label>Kategori</label>
-            <div class="option-chips" id="catOptions"></div>
+            <div class="dropdown-select" id="catDropdown">
+              <button type="button" class="dropdown-toggle" id="catToggle">
+                <span id="catToggleLabel">Pilih kategori</span><span class="arrow">▾</span>
+              </button>
+              <div class="dropdown-menu hidden" id="catMenu"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Keterangan Lengkap <span class="optional-tag">(opsional, boleh dikosongkan)</span></label>
+            <textarea id="txNotes" placeholder="Tulis detail tambahan kalau perlu, mis. nama toko, alasan pengeluaran, dll."></textarea>
           </div>
           <div class="field">
             <label for="txAmount">Jumlah (Rp)</label>
@@ -559,26 +618,57 @@
     expense: ['Makan', 'Transport', 'Invest/Menabung', 'Kebutuhan pokok', 'Jajan']
   };
 
-  function renderChipGroup(containerId, options, selectedValue, onSelect){
-    const container = document.getElementById(containerId);
-    container.innerHTML = options.map(opt =>
-      `<button type="button" class="chip ${opt === selectedValue ? 'active' : ''}" data-val="${opt}">${opt}</button>`
+  function renderDropdown(toggleId, labelId, menuId, options, selectedValue, placeholder, onSelect){
+    const toggle = document.getElementById(toggleId);
+    const label = document.getElementById(labelId);
+    const menu = document.getElementById(menuId);
+
+    label.textContent = selectedValue || placeholder;
+    toggle.classList.toggle('filled', !!selectedValue);
+
+    menu.innerHTML = options.map(opt =>
+      `<button type="button" class="${opt === selectedValue ? 'active' : ''}" data-val="${opt}">${opt}</button>`
     ).join('');
-    container.querySelectorAll('.chip').forEach(btn => {
-      btn.addEventListener('click', () => onSelect(btn.dataset.val));
+    menu.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        onSelect(btn.dataset.val);
+        menu.classList.add('hidden');
+      });
     });
   }
 
+  function closeAllDropdowns(){
+    document.getElementById('descMenu').classList.add('hidden');
+    document.getElementById('catMenu').classList.add('hidden');
+  }
+
   function renderOptionChips(){
-    renderChipGroup('descOptions', descOptionsData[currentType], selectedDesc, (val) => {
+    renderDropdown('descToggle', 'descToggleLabel', 'descMenu', descOptionsData[currentType], selectedDesc, 'Pilih keterangan', (val) => {
       selectedDesc = val;
       renderOptionChips();
     });
-    renderChipGroup('catOptions', catOptionsData[currentType], selectedCat, (val) => {
+    renderDropdown('catToggle', 'catToggleLabel', 'catMenu', catOptionsData[currentType], selectedCat, 'Pilih kategori', (val) => {
       selectedCat = val;
       renderOptionChips();
     });
   }
+
+  document.getElementById('descToggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = document.getElementById('descMenu');
+    const wasHidden = menu.classList.contains('hidden');
+    closeAllDropdowns();
+    if(wasHidden) menu.classList.remove('hidden');
+  });
+  document.getElementById('catToggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = document.getElementById('catMenu');
+    const wasHidden = menu.classList.contains('hidden');
+    closeAllDropdowns();
+    if(wasHidden) menu.classList.remove('hidden');
+  });
+  document.addEventListener('click', closeAllDropdowns);
+
 
   const btnIncome = document.getElementById('btnIncome');
   const btnExpense = document.getElementById('btnExpense');
@@ -696,6 +786,7 @@
       date: row.date,
       desc: row.description,
       cat: row.category,
+      notes: row.notes,
       amount: Number(row.amount),
       type: row.type
     }));
@@ -774,6 +865,7 @@
               <span>${dateFmt}</span>
               ${t.cat ? `<span class="cat-chip" style="background:${c.bg}; color:${c.fg};">${t.cat}</span>` : ''}
             </div>
+            ${t.notes ? `<div class="tx-notes">${t.notes}</div>` : ''}
           </div>
           <div class="tx-amount ${t.type === 'income' ? 'in' : 'out'}">${t.type === 'income' ? '+' : '−'}${fmt(t.amount)}</div>
           <button class="tx-del" data-id="${t.id}" title="Hapus">×</button>
@@ -798,6 +890,7 @@
     const date = document.getElementById('txDate').value;
     const desc = selectedDesc;
     const cat = selectedCat;
+    const notes = document.getElementById('txNotes').value.trim();
     const amount = parseFloat(document.getElementById('txAmount').value);
 
     if(!date || !desc || isNaN(amount) || amount <= 0){
@@ -811,7 +904,7 @@
     const { data: userData } = await sb.auth.getUser();
     const { error } = await sb.from('transactions').insert({
       user_id: userData.user.id,
-      date, description: desc, category: cat || null, amount, type: currentType
+      date, description: desc, category: cat || null, notes: notes || null, amount, type: currentType
     });
 
     txSubmitBtn.disabled = false;
@@ -823,6 +916,7 @@
     }
 
     document.getElementById('txAmount').value = '';
+    document.getElementById('txNotes').value = '';
     selectedDesc = null;
     selectedCat = null;
     renderOptionChips();
