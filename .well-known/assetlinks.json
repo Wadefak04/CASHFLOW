@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.cashflowtoday.twa",
+        "sha256_cert_fingerprints": ["F9:97:85:C6:6A:39:E7:D0:43:0D:B2:7D:71:CE:BA:A4:58:03:D4:EC:4D:3A:C5:20:16:E6:0A:5A:59:37:88:98"]
+      }
+    }]
