@@ -271,24 +271,6 @@
   .legend-dot{width:11px; height:11px; border-radius:50%;}
   .legend-item .amt{font-family:'IBM Plex Mono', monospace; font-weight:900;}
 
-  /* Ad slot */
-  .ad-slot{
-    border:2px dashed var(--purple);
-    border-radius:18px;
-    padding:36px 20px;
-    text-align:center;
-    background:linear-gradient(135deg, var(--purple-bg), var(--sky-bg));
-    color:var(--muted);
-  }
-  .ad-slot .ad-title{
-    font-family:'Fraunces', serif;
-    font-weight:900;
-    color:var(--purple);
-    font-size:16px;
-    margin-bottom:6px;
-  }
-  .ad-slot .ad-sub{font-size:12.5px;}
-
   /* Transaction list */
   .tx-list{display:flex; flex-direction:column; gap:10px;}
   .tx-card{
@@ -442,51 +424,11 @@
   .scanner-close:hover{background:rgba(255,255,255,0.2);}
 
   .hidden{display:none !important;}
-
-  .page-grid{
-    display:flex;
-    justify-content:center;
-    align-items:flex-start;
-    gap:20px;
-    max-width:1400px;
-    margin:0 auto;
-  }
-  .side-ad-slot{
-    display:none;
-    width:220px;
-    min-height:520px;
-    position:sticky;
-    top:24px;
-    border:2px dashed var(--purple);
-    border-radius:18px;
-    background:linear-gradient(180deg, var(--purple-bg), var(--sky-bg));
-    color:var(--muted);
-    text-align:center;
-    padding:24px 14px;
-    flex-shrink:0;
-  }
-  .side-ad-slot .ad-title{
-    font-family:'Fraunces', serif;
-    font-weight:900;
-    color:var(--purple);
-    font-size:15px;
-    margin-bottom:6px;
-  }
-  .side-ad-slot .ad-sub{font-size:12px; line-height:1.5;}
-  @media (min-width: 1180px){
-    .side-ad-slot{display:flex; flex-direction:column; align-items:center; justify-content:center;}
-  }
 </style>
 </head>
 <body>
 
-<div class="page-grid">
-  <aside class="side-ad-slot">
-    <div class="ad-title">Ruang Iklan</div>
-    <div class="ad-sub">Slot ini siap diisi kode iklan (mis. Google AdSense) setelah akunmu disetujui.</div>
-  </aside>
-
-  <div class="shell">
+<div class="shell">
   <header>
     <div class="title-box">
       <h1>Buku Kas</h1>
@@ -605,11 +547,6 @@
         </div>
       </div>
 
-      <div class="ad-slot">
-        <div class="ad-title">Ruang Iklan</div>
-        <div class="ad-sub">Slot ini disediakan untuk kerja sama iklan di masa mendatang.</div>
-      </div>
-
       <div class="card ledger-panel">
         <h2>Riwayat Transaksi</h2>
         <div class="type-toggle" id="historyToggle">
@@ -645,12 +582,6 @@
     </div>
   </div>
   </div>
-
-  <aside class="side-ad-slot">
-    <div class="ad-title">Ruang Iklan</div>
-    <div class="ad-sub">Slot ini siap diisi kode iklan (mis. Google AdSense) setelah akunmu disetujui.</div>
-  </aside>
-</div>
 
 <div class="scanner-overlay" id="scannerOverlay">
   <div class="scanner-box">
