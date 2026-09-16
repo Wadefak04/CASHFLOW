@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buku Kas — Pendapatan & Pengeluaran</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1C8FC4">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Buku Kas">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <style>
@@ -432,11 +442,51 @@
   .scanner-close:hover{background:rgba(255,255,255,0.2);}
 
   .hidden{display:none !important;}
+
+  .page-grid{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    gap:20px;
+    max-width:1400px;
+    margin:0 auto;
+  }
+  .side-ad-slot{
+    display:none;
+    width:220px;
+    min-height:520px;
+    position:sticky;
+    top:24px;
+    border:2px dashed var(--purple);
+    border-radius:18px;
+    background:linear-gradient(180deg, var(--purple-bg), var(--sky-bg));
+    color:var(--muted);
+    text-align:center;
+    padding:24px 14px;
+    flex-shrink:0;
+  }
+  .side-ad-slot .ad-title{
+    font-family:'Fraunces', serif;
+    font-weight:900;
+    color:var(--purple);
+    font-size:15px;
+    margin-bottom:6px;
+  }
+  .side-ad-slot .ad-sub{font-size:12px; line-height:1.5;}
+  @media (min-width: 1180px){
+    .side-ad-slot{display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  }
 </style>
 </head>
 <body>
 
-<div class="shell">
+<div class="page-grid">
+  <aside class="side-ad-slot">
+    <div class="ad-title">Ruang Iklan</div>
+    <div class="ad-sub">Slot ini siap diisi kode iklan (mis. Google AdSense) setelah akunmu disetujui.</div>
+  </aside>
+
+  <div class="shell">
   <header>
     <div class="title-box">
       <h1>Buku Kas</h1>
@@ -594,6 +644,12 @@
 
     </div>
   </div>
+  </div>
+
+  <aside class="side-ad-slot">
+    <div class="ad-title">Ruang Iklan</div>
+    <div class="ad-sub">Slot ini siap diisi kode iklan (mis. Google AdSense) setelah akunmu disetujui.</div>
+  </aside>
 </div>
 
 <div class="scanner-overlay" id="scannerOverlay">
@@ -984,6 +1040,12 @@
   });
 
   init();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 
   /* ---------- Barcode scanner (ZXing, kompatibel Android & iPhone) ---------- */
   const overlay = document.getElementById('scannerOverlay');
