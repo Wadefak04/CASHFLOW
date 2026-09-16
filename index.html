@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buku Kas — Pendapatan & Pengeluaran</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
@@ -327,6 +328,19 @@
 
   .field{margin-bottom:15px;}
   .field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:900;}
+  .option-chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    padding:9px 15px;
+    border:2px solid var(--rule);
+    border-radius:999px;
+    background:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:900;
+    cursor:pointer;
+    color:var(--muted);
+  }
+  .chip.active{background:var(--purple-bg); color:var(--purple); border-color:var(--purple);}
   .field input{
     width:100%; padding:10px 12px; border:2px solid var(--rule); border-radius:10px;
     background:#fff; font-family:'Inter', sans-serif; font-size:14px; color:var(--ink);
@@ -478,12 +492,12 @@
             <input type="date" id="txDate" required>
           </div>
           <div class="field">
-            <label for="txDesc">Keterangan</label>
-            <input type="text" id="txDesc" placeholder="Mis. Gaji bulanan, beli bahan baku" required>
+            <label>Keterangan</label>
+            <div class="option-chips" id="descOptions"></div>
           </div>
           <div class="field">
-            <label for="txCat">Kategori</label>
-            <input type="text" id="txCat" placeholder="Mis. Gaji, Transport, Makan">
+            <label>Kategori</label>
+            <div class="option-chips" id="catOptions"></div>
           </div>
           <div class="field">
             <label for="txAmount">Jumlah (Rp)</label>
@@ -533,6 +547,38 @@
   let authMode = 'login';
   let currentType = 'expense';
   let transactions = [];
+  let selectedDesc = null;
+  let selectedCat = null;
+
+  const descOptionsData = {
+    income: ['Gaji bulanan', 'Pendapatan luar'],
+    expense: ['Belanja bulanan', 'Makan diluar', 'Jajan', 'Bensin', 'Menabung']
+  };
+  const catOptionsData = {
+    income: ['Gaji', 'Kategori sampingan'],
+    expense: ['Makan', 'Transport', 'Invest/Menabung', 'Kebutuhan pokok', 'Jajan']
+  };
+
+  function renderChipGroup(containerId, options, selectedValue, onSelect){
+    const container = document.getElementById(containerId);
+    container.innerHTML = options.map(opt =>
+      `<button type="button" class="chip ${opt === selectedValue ? 'active' : ''}" data-val="${opt}">${opt}</button>`
+    ).join('');
+    container.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => onSelect(btn.dataset.val));
+    });
+  }
+
+  function renderOptionChips(){
+    renderChipGroup('descOptions', descOptionsData[currentType], selectedDesc, (val) => {
+      selectedDesc = val;
+      renderOptionChips();
+    });
+    renderChipGroup('catOptions', catOptionsData[currentType], selectedCat, (val) => {
+      selectedCat = val;
+      renderOptionChips();
+    });
+  }
 
   const btnIncome = document.getElementById('btnIncome');
   const btnExpense = document.getElementById('btnExpense');
@@ -674,12 +720,20 @@
     currentType = 'income';
     btnIncome.classList.add('active');
     btnExpense.classList.remove('active');
+    selectedDesc = null;
+    selectedCat = null;
+    renderOptionChips();
   });
   btnExpense.addEventListener('click', () => {
     currentType = 'expense';
     btnExpense.classList.add('active');
     btnIncome.classList.remove('active');
+    selectedDesc = null;
+    selectedCat = null;
+    renderOptionChips();
   });
+
+  renderOptionChips();
 
   function render(){
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
@@ -742,11 +796,14 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const date = document.getElementById('txDate').value;
-    const desc = document.getElementById('txDesc').value.trim();
-    const cat = document.getElementById('txCat').value.trim();
+    const desc = selectedDesc;
+    const cat = selectedCat;
     const amount = parseFloat(document.getElementById('txAmount').value);
 
-    if(!date || !desc || isNaN(amount) || amount <= 0) return;
+    if(!date || !desc || isNaN(amount) || amount <= 0){
+      if(!desc) alert('Pilih salah satu Keterangan terlebih dahulu.');
+      return;
+    }
 
     txSubmitBtn.disabled = true;
     txSubmitBtn.textContent = 'Menyimpan…';
@@ -765,72 +822,60 @@
       return;
     }
 
-    form.reset();
+    document.getElementById('txAmount').value = '';
+    selectedDesc = null;
+    selectedCat = null;
+    renderOptionChips();
     document.getElementById('txDate').value = date;
     loadTransactions();
   });
 
   init();
 
-  /* ---------- Barcode scanner ---------- */
+  /* ---------- Barcode scanner (ZXing, kompatibel Android & iPhone) ---------- */
   const overlay = document.getElementById('scannerOverlay');
   const video = document.getElementById('scannerVideo');
   const statusEl = document.getElementById('scannerStatus');
   const openScanBtn = document.getElementById('openScanBtn');
   const closeScanBtn = document.getElementById('closeScanBtn');
 
-  let mediaStream = null;
-  let scanLoopId = null;
-  let detector = null;
+  let codeReader = null;
+  let scanControls = null;
 
   async function openScanner(){
     overlay.classList.add('open');
     statusEl.textContent = 'Mengaktifkan kamera…';
 
-    if(!('BarcodeDetector' in window)){
-      statusEl.textContent = 'Browser ini belum mendukung pemindaian barcode langsung. Coba buka di Chrome versi terbaru (Android/desktop), atau isi transaksi secara manual.';
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      statusEl.textContent = 'Perangkat/browser ini tidak mendukung akses kamera. Pastikan situs diakses lewat HTTPS, atau isi transaksi secara manual.';
       return;
     }
 
     try{
-      detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','upc_e','code_128','qr_code'] });
-    }catch(err){
-      statusEl.textContent = 'Pemindai barcode tidak tersedia di perangkat ini.';
-      return;
-    }
-
-    try{
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      video.srcObject = mediaStream;
-      await video.play();
-      statusEl.textContent = 'Arahkan kamera ke barcode pada struk…';
-      scanLoop();
+      codeReader = new ZXing.BrowserMultiFormatReader();
+      scanControls = await codeReader.decodeFromConstraints(
+        { video: { facingMode: 'environment' } },
+        video,
+        (result, err) => {
+          if(result){
+            onCodeDetected(result.getText());
+          }
+        }
+      );
+      statusEl.textContent = 'Arahkan kamera ke barcode atau QR pada struk…';
     }catch(err){
       statusEl.textContent = 'Tidak bisa mengakses kamera. Pastikan izin kamera diaktifkan, dan situs diakses lewat HTTPS.';
     }
   }
 
-  async function scanLoop(){
-    if(!detector || !mediaStream) return;
-    try{
-      const codes = await detector.detect(video);
-      if(codes.length > 0){
-        onCodeDetected(codes[0].rawValue);
-        return;
-      }
-    }catch(err){
-      // detection frame error, ignore and keep trying
-    }
-    scanLoopId = requestAnimationFrame(scanLoop);
-  }
-
   function onCodeDetected(value){
-    statusEl.textContent = 'Barcode terbaca: ' + value;
-    document.getElementById('txDesc').value = 'Struk belanja #' + value;
-    document.getElementById('txCat').value = 'Belanja';
+    statusEl.textContent = 'Kode terbaca: ' + value;
     currentType = 'expense';
     btnExpense.classList.add('active');
     btnIncome.classList.remove('active');
+    selectedDesc = 'Belanja bulanan';
+    selectedCat = 'Kebutuhan pokok';
+    renderOptionChips();
     setTimeout(() => {
       closeScanner();
       document.getElementById('txAmount').focus();
@@ -839,11 +884,12 @@
 
   function closeScanner(){
     overlay.classList.remove('open');
-    if(scanLoopId) cancelAnimationFrame(scanLoopId);
-    scanLoopId = null;
-    if(mediaStream){
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
+    if(scanControls){
+      scanControls.stop();
+      scanControls = null;
+    }
+    if(codeReader){
+      codeReader = null;
     }
   }
 
