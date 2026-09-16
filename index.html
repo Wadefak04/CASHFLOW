@@ -512,9 +512,34 @@
 
       <div class="card ledger-panel">
         <h2>Riwayat Transaksi</h2>
-        <div class="tx-list" id="txList">
-          <div class="empty-state">Belum ada transaksi. Tambahkan lewat form di bawah, atau scan struk belanja.</div>
+        <div class="type-toggle" id="historyToggle">
+          <button type="button" id="histIncomeBtn" class="in">Pemasukan</button>
+          <button type="button" id="histExpenseBtn" class="out">Pengeluaran</button>
         </div>
+        <div class="tx-list hidden" id="txList"></div>
+        <div class="empty-state" id="txPlaceholder">Klik salah satu tombol di atas untuk menampilkan riwayat transaksi.</div>
+      </div>
+
+      <div class="card recap-panel">
+        <h2>Rekap &amp; Unduh Laporan</h2>
+        <div class="type-toggle" id="recapModeToggle">
+          <button type="button" id="recapModeMonth" class="active">Per Bulan</button>
+          <button type="button" id="recapModeRange">Rentang Tanggal</button>
+        </div>
+        <div class="field" id="recapMonthField">
+          <label for="recapMonth">Pilih Bulan</label>
+          <input type="month" id="recapMonth">
+        </div>
+        <div class="field hidden" id="recapRangeField">
+          <label for="recapFrom">Dari Tanggal</label>
+          <input type="date" id="recapFrom">
+        </div>
+        <div class="field hidden" id="recapToField">
+          <label for="recapTo">Sampai Tanggal</label>
+          <input type="date" id="recapTo">
+        </div>
+        <button type="button" class="submit-btn" id="recapDownloadBtn">Unduh Rekap (CSV)</button>
+        <div class="note" id="recapMsg"></div>
       </div>
 
       <div class="card form-panel">
@@ -675,6 +700,10 @@
   const form = document.getElementById('txForm');
   const txSubmitBtn = document.getElementById('txSubmitBtn');
   const txList = document.getElementById('txList');
+  const txPlaceholder = document.getElementById('txPlaceholder');
+  const histIncomeBtn = document.getElementById('histIncomeBtn');
+  const histExpenseBtn = document.getElementById('histExpenseBtn');
+  let historyFilter = null;
   const todayLabel = document.getElementById('todayLabel');
   const donutChart = document.getElementById('donutChart');
 
@@ -826,6 +855,21 @@
 
   renderOptionChips();
 
+  function updateHistoryButtons(){
+    histIncomeBtn.classList.toggle('active', historyFilter === 'income');
+    histExpenseBtn.classList.toggle('active', historyFilter === 'expense');
+  }
+  histIncomeBtn.addEventListener('click', () => {
+    historyFilter = historyFilter === 'income' ? null : 'income';
+    updateHistoryButtons();
+    render();
+  });
+  histExpenseBtn.addEventListener('click', () => {
+    historyFilter = historyFilter === 'expense' ? null : 'expense';
+    updateHistoryButtons();
+    render();
+  });
+
   function render(){
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
@@ -846,12 +890,27 @@
       donutChart.style.background = 'conic-gradient(var(--rule) 0deg 360deg)';
     }
 
-    if(transactions.length === 0){
-      txList.innerHTML = '<div class="empty-state">Belum ada transaksi. Tambahkan lewat form di bawah, atau scan struk belanja.</div>';
+    if(!historyFilter){
+      txList.classList.add('hidden');
+      txPlaceholder.classList.remove('hidden');
+      txPlaceholder.textContent = 'Klik salah satu tombol di atas untuk menampilkan riwayat transaksi.';
       return;
     }
 
-    const sorted = [...transactions].sort((a,b) => new Date(b.date) - new Date(a.date));
+    const filtered = transactions.filter(t => t.type === historyFilter);
+    if(filtered.length === 0){
+      txList.classList.add('hidden');
+      txPlaceholder.classList.remove('hidden');
+      txPlaceholder.textContent = historyFilter === 'income'
+        ? 'Belum ada transaksi pemasukan.'
+        : 'Belum ada transaksi pengeluaran.';
+      return;
+    }
+
+    txPlaceholder.classList.add('hidden');
+    txList.classList.remove('hidden');
+
+    const sorted = [...filtered].sort((a,b) => new Date(b.date) - new Date(a.date));
     txList.innerHTML = sorted.map(t => {
       const c = colorFor(t.cat || (t.type === 'income' ? 'Pendapatan' : 'Umum'));
       const dateFmt = new Date(t.date).toLocaleDateString('id-ID', { day:'2-digit', month:'short' });
@@ -989,6 +1048,115 @@
 
   openScanBtn.addEventListener('click', openScanner);
   closeScanBtn.addEventListener('click', closeScanner);
+
+  /* ---------- Rekap & Unduh Laporan ---------- */
+  const recapModeMonth = document.getElementById('recapModeMonth');
+  const recapModeRange = document.getElementById('recapModeRange');
+  const recapMonthField = document.getElementById('recapMonthField');
+  const recapRangeField = document.getElementById('recapRangeField');
+  const recapToField = document.getElementById('recapToField');
+  const recapMonth = document.getElementById('recapMonth');
+  const recapFrom = document.getElementById('recapFrom');
+  const recapTo = document.getElementById('recapTo');
+  const recapDownloadBtn = document.getElementById('recapDownloadBtn');
+  const recapMsg = document.getElementById('recapMsg');
+
+  let recapMode = 'month';
+  const nowForRecap = new Date();
+  recapMonth.value = nowForRecap.toISOString().slice(0,7);
+
+  recapModeMonth.addEventListener('click', () => {
+    recapMode = 'month';
+    recapModeMonth.classList.add('active');
+    recapModeRange.classList.remove('active');
+    recapMonthField.classList.remove('hidden');
+    recapRangeField.classList.add('hidden');
+    recapToField.classList.add('hidden');
+  });
+  recapModeRange.addEventListener('click', () => {
+    recapMode = 'range';
+    recapModeRange.classList.add('active');
+    recapModeMonth.classList.remove('active');
+    recapRangeField.classList.remove('hidden');
+    recapToField.classList.remove('hidden');
+    recapMonthField.classList.add('hidden');
+  });
+
+  recapDownloadBtn.addEventListener('click', () => {
+    recapMsg.textContent = '';
+    let startDate, endDate, fileLabel;
+
+    if(recapMode === 'month'){
+      if(!recapMonth.value){
+        recapMsg.textContent = 'Pilih bulan terlebih dahulu.';
+        return;
+      }
+      const [y, m] = recapMonth.value.split('-').map(Number);
+      startDate = new Date(y, m - 1, 1);
+      endDate = new Date(y, m, 0);
+      fileLabel = recapMonth.value;
+    }else{
+      if(!recapFrom.value || !recapTo.value){
+        recapMsg.textContent = 'Isi tanggal awal dan akhir terlebih dahulu.';
+        return;
+      }
+      startDate = new Date(recapFrom.value);
+      endDate = new Date(recapTo.value);
+      if(startDate > endDate){
+        recapMsg.textContent = 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.';
+        return;
+      }
+      fileLabel = recapFrom.value + '_sampai_' + recapTo.value;
+    }
+
+    const filtered = transactions.filter(t => {
+      const d = new Date(t.date);
+      return d >= startDate && d <= endDate;
+    });
+
+    if(filtered.length === 0){
+      recapMsg.textContent = 'Tidak ada transaksi pada periode yang dipilih.';
+      return;
+    }
+
+    const sorted = [...filtered].sort((a,b) => new Date(a.date) - new Date(b.date));
+    let totalIn = 0, totalOut = 0;
+
+    const rows = [
+      ['Tanggal', 'Jenis', 'Keterangan', 'Kategori', 'Keterangan Lengkap', 'Jumlah (Rp)']
+    ];
+    sorted.forEach(t => {
+      if(t.type === 'income') totalIn += t.amount; else totalOut += t.amount;
+      rows.push([
+        t.date,
+        t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+        t.desc || '',
+        t.cat || '',
+        (t.notes || '').replace(/\n/g, ' '),
+        t.amount
+      ]);
+    });
+    rows.push([]);
+    rows.push(['', '', '', '', 'Total Pemasukan', totalIn]);
+    rows.push(['', '', '', '', 'Total Pengeluaran', totalOut]);
+    rows.push(['', '', '', '', 'Saldo', totalIn - totalOut]);
+
+    const csvContent = rows.map(r =>
+      r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rekap-bukukas-${fileLabel}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    recapMsg.textContent = 'Rekap berhasil diunduh.';
+  });
 </script>
 
 </body>
