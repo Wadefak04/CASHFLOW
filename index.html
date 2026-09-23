@@ -307,6 +307,7 @@
   .tx-del:hover{background:var(--expense-bg); color:var(--expense);}
 
   .empty-state{text-align:center; color:var(--muted); padding:40px 20px; font-size:14px;}
+  .ledger-panel .type-toggle{margin-bottom:14px;}
 
   /* Form */
   .scan-btn{
@@ -549,12 +550,30 @@
 
       <div class="card ledger-panel">
         <h2>Riwayat Transaksi</h2>
+
+        <div class="type-toggle" id="historyModeToggle">
+          <button type="button" id="histModeMonth" class="active">Per Bulan</button>
+          <button type="button" id="histModeRange">Tanggal Spesifik</button>
+        </div>
+        <div class="field" id="histMonthField">
+          <label for="histMonth">Pilih Bulan</label>
+          <input type="month" id="histMonth">
+        </div>
+        <div class="field hidden" id="histFromField">
+          <label for="histFrom">Dari Tanggal</label>
+          <input type="date" id="histFrom">
+        </div>
+        <div class="field hidden" id="histToField">
+          <label for="histTo">Sampai Tanggal</label>
+          <input type="date" id="histTo">
+        </div>
+
         <div class="type-toggle" id="historyToggle">
           <button type="button" id="histIncomeBtn" class="in">Pemasukan</button>
           <button type="button" id="histExpenseBtn" class="out">Pengeluaran</button>
         </div>
         <div class="tx-list hidden" id="txList"></div>
-        <div class="empty-state" id="txPlaceholder">Klik salah satu tombol di atas untuk menampilkan riwayat transaksi.</div>
+        <div class="empty-state" id="txPlaceholder">Pilih periode dan salah satu tombol di atas untuk menampilkan riwayat transaksi.</div>
       </div>
 
       <div class="card recap-panel">
@@ -691,6 +710,57 @@
   const histIncomeBtn = document.getElementById('histIncomeBtn');
   const histExpenseBtn = document.getElementById('histExpenseBtn');
   let historyFilter = null;
+
+  const histModeMonth = document.getElementById('histModeMonth');
+  const histModeRange = document.getElementById('histModeRange');
+  const histMonthField = document.getElementById('histMonthField');
+  const histFromField = document.getElementById('histFromField');
+  const histToField = document.getElementById('histToField');
+  const histMonth = document.getElementById('histMonth');
+  const histFrom = document.getElementById('histFrom');
+  const histTo = document.getElementById('histTo');
+  let historyMode = 'month';
+
+  const nowForHist = new Date();
+  histMonth.value = nowForHist.toISOString().slice(0,7);
+
+  histModeMonth.addEventListener('click', () => {
+    historyMode = 'month';
+    histModeMonth.classList.add('active');
+    histModeRange.classList.remove('active');
+    histMonthField.classList.remove('hidden');
+    histFromField.classList.add('hidden');
+    histToField.classList.add('hidden');
+    render();
+  });
+  histModeRange.addEventListener('click', () => {
+    historyMode = 'range';
+    histModeRange.classList.add('active');
+    histModeMonth.classList.remove('active');
+    histFromField.classList.remove('hidden');
+    histToField.classList.remove('hidden');
+    histMonthField.classList.add('hidden');
+    render();
+  });
+  histMonth.addEventListener('change', render);
+  histFrom.addEventListener('change', render);
+  histTo.addEventListener('change', render);
+
+  function getHistoryPeriodRange(){
+    if(historyMode === 'month'){
+      if(!histMonth.value) return null;
+      const [y, m] = histMonth.value.split('-').map(Number);
+      const start = new Date(y, m - 1, 1);
+      const end = new Date(y, m, 0);
+      return { start, end };
+    }else{
+      if(!histFrom.value || !histTo.value) return null;
+      const start = new Date(histFrom.value);
+      const end = new Date(histTo.value);
+      if(start > end) return null;
+      return { start, end };
+    }
+  }
   const todayLabel = document.getElementById('todayLabel');
   const donutChart = document.getElementById('donutChart');
 
@@ -880,17 +950,32 @@
     if(!historyFilter){
       txList.classList.add('hidden');
       txPlaceholder.classList.remove('hidden');
-      txPlaceholder.textContent = 'Klik salah satu tombol di atas untuk menampilkan riwayat transaksi.';
+      txPlaceholder.textContent = 'Pilih periode dan salah satu tombol di atas untuk menampilkan riwayat transaksi.';
       return;
     }
 
-    const filtered = transactions.filter(t => t.type === historyFilter);
+    const period = getHistoryPeriodRange();
+    if(!period){
+      txList.classList.add('hidden');
+      txPlaceholder.classList.remove('hidden');
+      txPlaceholder.textContent = historyMode === 'month'
+        ? 'Pilih bulan terlebih dahulu.'
+        : 'Isi tanggal awal dan akhir terlebih dahulu (tanggal awal tidak boleh lebih besar dari akhir).';
+      return;
+    }
+
+    const filtered = transactions.filter(t => {
+      if(t.type !== historyFilter) return false;
+      const d = new Date(t.date);
+      return d >= period.start && d <= period.end;
+    });
+
     if(filtered.length === 0){
       txList.classList.add('hidden');
       txPlaceholder.classList.remove('hidden');
       txPlaceholder.textContent = historyFilter === 'income'
-        ? 'Belum ada transaksi pemasukan.'
-        : 'Belum ada transaksi pengeluaran.';
+        ? 'Belum ada transaksi pemasukan pada periode ini.'
+        : 'Belum ada transaksi pengeluaran pada periode ini.';
       return;
     }
 
